@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Imposter Game</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    h1, h2, h3 {
+      color: #2c3e50;
+      text-align: center;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #2980b9;
+    }
+    
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .player-answer {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .player-answer:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .player-answer.selected {
+      background-color: #d5f5f5;
+      border-color: #3498db;
+    }
+    
+    .player-answer.imposter {
+      background-color: #ffdddd;
+      border-color: #e74c3c;
+    }
+    
+    .game-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #7f8c8d;
+      margin-bottom: 10px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 10px 0;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+    }
+    
+    .checkbox-item input {
+      width: auto;
+      margin-right: 5px;
+    }
+    
+    #answersList {
+      list-style-type: none;
+      padding: 0;
+    }
+    
+    #playerVotes {
+      margin-top: 20px;
+    }
+    
+    .vote-result {
+      margin: 5px 0;
+    }
+    
+    .message {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      text-align: center;
+    }
+    
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .card {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Imposter Game</h1>
+    
+    <!-- Player ID Screen -->
+    <div id="playerIdScreen" class="card">
+      <h2>Create Your Player ID</h2>
+      <input type="text" id="playerIdInput" placeholder="Enter your player ID">
+      <button id="createPlayerIdBtn">Create Player ID</button>
+    </div>
+    
+    <!-- Game Options Screen -->
+    <div id="gameOptionsScreen" class="card hidden">
+      <h2>Game Options</h2>
+      <div class="game-info">
+        <span>Player ID: <strong id="displayPlayerId"></strong></span>
+      </div>
+      <div>
+        <button id="createGameBtn">Create New Game</button>
+        <div class="separator">OR</div>
+        <input type="text" id="joinRoomIdInput" placeholder="Enter Room ID">
+        <button id="joinGameBtn">Join Game</button>
+      </div>
+    </div>
+    
+    <!-- Game Creation Screen -->
+    <div id="gameCreationScreen" class="card hidden">
+      <h2>Create Game</h2>
+      <div class="game-info">
+        <span>Room ID: <strong id="roomIdDisplay"></strong></span>
+      </div>
+      <h3>Question Types</h3>
+      <div class="checkbox-group">
+        <div class="checkbox-item">
+          <input type="checkbox" id="typeNumbers" value="numbers" checked>
+          <label for="typeNumbers">Numbers</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="typeNames" value="names" checked>
+          <label for="typeNames">Names</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="typePlaces" value="places" checked>
+          <label for="typePlaces">Places</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="typeObjects" value="objects" checked>
+          <label for="typeObjects">Objects</label>
+        </div>
+        <div class="checkbox-item">
+          <input type="checkbox" id="typeFood" value="food" checked>
+          <label for="typeFood">Food</label>
+        </div>
+      </div>
+      <div>
+        <h3>Players in Room</h3>
+        <ul id="playersInRoom"></ul>
+        <div class="message error hidden" id="minPlayersError">
+          Need at least 3 players to start the game
+        </div>
+        <button id="startGameBtn" disabled>Start Game (Need 3+ Players)</button>
+      </div>
+    </div>
+    
+    <!-- Waiting Room Screen -->
+    <div id="waitingRoomScreen" class="card hidden">
+      <h2>Waiting Room</h2>
+      <div class="game-info">
+        <span>Room ID: <strong id="waitingRoomId"></strong></span>
+        <span>Players: <strong id="waitingRoomPlayerCount">0</strong></span>
+      </div>
+      <p>Waiting for the host to start the game...</p>
+      <ul id="waitingRoomPlayersList"></ul>
+    </div>
+    
+    <!-- Question Screen -->
+    <div id="questionScreen" class="card hidden">
+      <h2>Your Question</h2>
+      <div class="game-info">
+        <span>Room ID: <strong id="questionRoomId"></strong></span>
+        <span>Round: <strong id="roundNumber">1</strong></span>
+      </div>
+      <div id="questionDisplay" class="card">
+        <p id="questionText"></p>
+      </div>
+      <div>
+        <input type="text" id="answerInput" placeholder="Your answer">
+        <button id="submitAnswerBtn">Submit Answer</button>
+      </div>
+      <div id="waitingForOthers" class="hidden">
+        <p>Waiting for other players to submit their answers...</p>
+        <div id="submitStatus"></div>
+        <button id="goToVotingBtn" class="hidden">Go to Voting Stage</button>
+      </div>
+    </div>
+    
+    <!-- Voting Screen -->
+    <div id="votingScreen" class="card hidden">
+      <h2>Voting Stage</h2>
+      <div class="game-info">
+        <span>Room ID: <strong id="votingRoomId"></strong></span>
+        <span>Round: <strong id="votingRoundNumber">1</strong></span>
+      </div>
+      <div class="card">
+        <h3>Question</h3>
+        <p id="mainQuestionDisplay"></p>
+        <h3>All Answers</h3>
+        <p>Click on the answer you think was given by the imposter:</p>
+        <ul id="answersList"></ul>
+        <button id="submitVoteBtn" disabled>Submit Vote</button>
+      </div>
+      <div id="waitingForVotes" class="hidden">
+        <p>Waiting for other players to vote...</p>
+        <div id="voteStatus"></div>
+        <button id="showResultsBtn" class="hidden">Show Results</button>
+      </div>
+    </div>
+    
+    <!-- Results Screen -->
+    <div id="resultsScreen" class="card hidden">
+      <h2>Voting Results</h2>
+      <div class="game-info">
+        <span>Room ID: <strong id="resultsRoomId"></strong></span>
+        <span>Round: <strong id="resultsRoundNumber">1</strong></span>
+      </div>
+      <div class="card">
+        <div id="playerVotes"></div>
+        <button id="revealImposterBtn">Reveal Imposter</button>
+      </div>
+      <div id="imposterReveal" class="hidden">
+        <div class="card">
+          <h3>The Imposter Was:</h3>
+          <p id="imposterName"></p>
+          <p>Imposter Question: <span id="imposterQuestion"></span></p>
+        </div>
+        <button id="nextRoundBtn">Start Next Round</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.2/firebase-database-compat.min.js"></script>
+  
+  <script>
+    // Initialize Firebase (using mock implementation for demo)
+    const firebaseConfig = {
+      databaseURL: "https://imposter-game-demo.firebaseio.com"
+    };
+    
+    // Mock Firebase implementation since we can't actually connect to Firebase
+    class MockFirebase {
+      constructor() {
+        this.data = {};
+        this.listeners = {};
+        this.currentUser = null;
+      }
+      
+      ref(path) {
+        return {
+          set: (data) => {
+            this.setData(path, data);
+            return Promise.resolve();
+          },
+          update: (data) => {
+            const existingData = this.getData(path) || {};
+            this.setData(path, { ...existingData, ...data });
+            return Promise.resolve();
+          },
+          push: () => {
+            const key = Math.random().toString(36).substring(2, 8).toUpperCase();
+            return {
+              key,
+              set: (data) => {
+                this.setData(`${path}/${key}`, data);
+                return Promise.resolve();
+              }
+            };
+          },
+          child: (childPath) => this.ref(`${path}/${childPath}`),
+          once: (eventType) => {
+            return Promise.resolve({
+              val: () => this.getData(path),
+              exists: () => this.getData(path) !== undefined
+            });
+          },
+          on: (eventType, callback) => {
+            if (!this.listeners[path]) {
+              this.listeners[path] = [];
+            }
+            this.listeners[path].push(callback);
+            callback({
+              val: () => this.getData(path),
+              exists: () => this.getData(path) !== undefined
+            });
+            return callback;
+          },
+          off: (eventType, callback) => {
+            if (this.listeners[path]) {
+              this.listeners[path] = this.listeners[path].filter(cb => cb !== callback);
+            }
+          },
+          remove: () => {
+            this.setData(path, null);
+            return Promise.resolve();
+          }
+        };
+      }
+      
+      setData(path, data) {
+        const parts = path.split('/').filter(p => p);
+        let current = this.data;
+        
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!current[parts[i]]) {
+            current[parts[i]] = {};
+          }
+          current = current[parts[i]];
+        }
+        
+        if (data === null) {
+          delete current[parts[parts.length - 1]];
+        } else {
+          current[parts[parts.length - 1]] = data;
+        }
+        
+        // Trigger listeners
+        this.triggerListeners(path);
+      }
+      
+      getData(path) {
+        const parts = path.split('/').filter(p => p);
+        let current = this.data;
+        
+        for (const part of parts) {
+          if (!current || current[part] === undefined) {
+            return undefined;
+          }
+          current = current[part];
+        }
+        
+        return current;
+      }
+      
+      triggerListeners(path) {
+        // Trigger all listeners for this path and parent paths
+        const parts = path.split('/').filter(p => p);
+        let currentPath = '';
+        
+        for (const part of parts) {
+          currentPath += `/${part}`;
+          if (this.listeners[currentPath]) {
+            for (const callback of this.listeners[currentPath]) {
+              callback({
+                val: () => this.getData(currentPath),
+                exists: () => this.getData(currentPath) !== undefined
+              });
+            }
+          }
+        }
+        
+        // Also trigger listeners for child paths
+        Object.keys(this.listeners).forEach(listenerPath => {
+          if (listenerPath.startsWith(path)) {
+            for (const callback of this.listeners[listenerPath]) {
+              callback({
+                val: () => this.getData(listenerPath),
+                exists: () => this.getData(listenerPath) !== undefined
+              });
+            }
+          }
+        });
+      }
+    }
+    
+    // Set up mock Firebase
+    const mockFirebase = new MockFirebase();
+    const firebase = {
+      initializeApp: () => {},
+      database: () => ({
+        ref: (path) => mockFirebase.ref(path)
+      })
+    };
+    
+    // Initialize application
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    
+    // Game data
+    let currentPlayerId = null;
+    let currentRoomId = null;
+    let isHost = false;
+    let currentRound = 1;
+    let selectedAnswerId = null;
+    let isImposter = false;
+    let hasVoted = false;
+    
+    // Sample questions data - in a real app this would be stored in the database
+    const questions = {
+      numbers: [
+        { 
+          regular: "What percentage of the lottery would you give to your parents if you won?",
+          imposter: "What percentage would you get in a physics test right now?"
+        },
+        {
+          regular: "How many hours of sleep do you get on average?",
+          imposter: "How many cups of water do you drink daily?"
+        },
+        {
+          regular: "On a scale of 1-10, how good are you at cooking?",
+          imposter: "On a scale of 1-10, how good are you at dancing?"
+        },
+        {
+          regular: "How many countries have you visited?",
+          imposter: "How many languages can you speak?"
+        },
+        {
+          regular: "What's your ideal temperature in Fahrenheit for a room?",
+          imposter: "What's your ideal age to retire?"
+        }
+      ],
+      names: [
+        {
+          regular: "Who is your favorite fictional character?",
+          imposter: "Who is your favorite historical figure?"
+        },
+        {
+          regular: "Name a famous actor you think is overrated.",
+          imposter: "Name a famous musician you think is overrated."
+        },
+        {
+          regular: "Who was your childhood hero?",
+          imposter: "Who was your favorite teacher?"
+        },
+        {
+          regular: "If you could meet any living person, who would it be?",
+          imposter: "If you could bring back any deceased person for a day, who would it be?"
+        },
+        {
+          regular: "What would you name your boat if you had one?",
+          imposter: "What would you name your pet if you got a new one?"
+        }
+      ],
+      places: [
+        {
+          regular: "What's your dream vacation destination?",
+          imposter: "Where would be your ideal place to live?"
+        },
+        {
+          regular: "What's the best place you've ever visited?",
+          imposter: "What's the worst place you've ever visited?"
+        },
+        {
+          regular: "Where would you go if you could teleport anywhere right now?",
+          imposter: "Where would you go if you had to leave your country forever?"
+        },
+        {
+          regular: "What's a place you'd never want to visit?",
+          imposter: "What's a place everyone loves but you think is overrated?"
+        },
+        {
+          regular: "Where did you grow up?",
+          imposter: "Where did you go to school?"
+        }
+      ],
+      objects: [
+        {
+          regular: "What object in your home would you save first in a fire (assuming people and pets are safe)?",
+          imposter: "What's the most expensive thing you own?"
+        },
+        {
+          regular: "What's an item you use every day that you couldn't live without?",
+          imposter: "What's an item you rarely use but would never throw away?"
+        },
+        {
+          regular: "What tool or appliance do you wish you owned?",
+          imposter: "What's a gadget you own but never use?"
+        },
+        {
+          regular: "What's something you lost that you wish you could find?",
+          imposter: "What's something you borrowed and never returned?"
+        },
+        {
+          regular: "What's the most useless thing you've ever bought?",
+          imposter: "What's the most useful thing you've ever bought?"
+        }
+      ],
+      food: [
+        {
+          regular: "What's your favorite comfort food?",
+          imposter: "What food reminds you of your childhood?"
+        },
+        {
+          regular: "What food would you never eat again?",
+          imposter: "What's the strangest food you've ever tried?"
+        },
+        {
+          regular: "What's your go-to midnight snack?",
+          imposter: "What's your favorite breakfast food?"
+        },
+        {
+          regular: "If you could only eat one food for the rest of your life, what would it be?",
+          imposter: "What's a food from another culture you'd like to try?"
+        },
+        {
+          regular: "What's your favorite dessert?",
+          imposter: "What's your favorite holiday food?"
+        }
+      ]
+    };
+    
+    // Get DOM elements
+    const playerIdScreen = document.getElementById('playerIdScreen');
+    const gameOptionsScreen = document.getElementById('gameOptionsScreen');
+    const gameCreationScreen = document.getElementById('gameCreationScreen');
+    const waitingRoomScreen = document.getElementById('waitingRoomScreen');
+    const questionScreen = document.getElementById('questionScreen');
+    const votingScreen = document.getElementById('votingScreen');
+    const resultsScreen = document.getElementById('resultsScreen');
+    
+    // Player ID Screen
+    const playerIdInput = document.getElementById('playerIdInput');
+    const createPlayerIdBtn = document.getElementById('createPlayerIdBtn');
+    const displayPlayerId = document.getElementById('displayPlayerId');
+    
+    // Game Options Screen
+    const createGameBtn = document.getElementById('createGameBtn');
+    const joinRoomIdInput = document.getElementById('joinRoomIdInput');
+    const joinGameBtn = document.getElementById('joinGameBtn');
+    
+    // Game Creation Screen
+    const roomIdDisplay = document.getElementById('roomIdDisplay');
+    const playersInRoom = document.getElementById('playersInRoom');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const minPlayersError = document.getElementById('minPlayersError');
+    
+    // Question Types
+    const typeNumbers = document.getElementById('typeNumbers');
+    const typeNames = document.getElementById('typeNames');
+    const typePlaces = document.getElementById('typePlaces');
+    const typeObjects = document.getElementById('typeObjects');
+    const typeFood = document.getElementById('typeFood');
+    
+    // Waiting Room Screen
+    const waitingRoomId = document.getElementById('waitingRoomId');
+    const waitingRoomPlayerCount = document.getElementById('waitingRoomPlayerCount');
+    const waitingRoomPlayersList = document.getElementById('waitingRoomPlayersList');
+    
+    // Question Screen
+    const questionRoomId = document.getElementById('questionRoomId');
+    const roundNumber = document.getElementById('roundNumber');
+    const questionText = document.getElementById('questionText');
+    const answerInput = document.getElementById('answerInput');
+    const submitAnswerBtn = document.getElementById('submitAnswerBtn');
+    const waitingForOthers = document.getElementById('waitingForOthers');
+    const submitStatus = document.getElementById('submitStatus');
+    const goToVotingBtn = document.getElementById('goToVotingBtn');
+    
+    // Voting Screen
+    const votingRoomId = document.getElementById('votingRoomId');
+    const votingRoundNumber = document.getElementById('votingRoundNumber');
+    const mainQuestionDisplay = document.getElementById('mainQuestionDisplay');
+    const answersList = document.getElementById('answersList');
+    const submitVoteBtn = document.getElementById('submitVoteBtn');
+    const waitingForVotes = document.getElementById('waitingForVotes');
+    const voteStatus = document.getElementById('voteStatus');
+    const showResultsBtn = document.getElementById('showResultsBtn');
+    
+    // Results Screen
+    const resultsRoomId = document.getElementById('resultsRoomId');
+    const resultsRoundNumber = document.getElementById('resultsRoundNumber');
+    const playerVotes = document.getElementById('playerVotes');
+    const revealImposterBtn = document.getElementById('revealImposterBtn');
+    const imposterReveal = document.getElementById('imposterReveal');
+    const imposterName = document.getElementById('imposterName');
+    const imposterQuestion = document.getElementById('imposterQuestion');
+    const nextRoundBtn = document.getElementById('nextRoundBtn');
+    
+    // Helper Functions
+    function hideAllScreens() {
+      playerIdScreen.classList.add('hidden');
+      gameOptionsScreen.classList.add('hidden');
+      gameCreationScreen.classList.add('hidden');
+      waitingRoomScreen.classList.add('hidden');
+      questionScreen.classList.add('hidden');
+      votingScreen.classList.add('hidden');
+      resultsScreen.classList.add('hidden');
+    }
+    
+    function generateRoomId() {
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let result = '';
+      for (let i = 0; i < 6; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      return result;
+    }
+    
+    function getSelectedQuestionTypes() {
+      const types = [];
+      if (typeNumbers.checked) types.push('numbers');
+      if (typeNames.checked) types.push('names');
+      if (typePlaces.checked) types.push('places');
+      if (typeObjects.checked) types.push('objects');
+      if (typeFood.checked) types.push('food');
+      return types;
+    }
+    
+    function selectRandomQuestion(types) {
+      // Select a random question type from the available types
+      const randomType = types[Math.floor(Math.random() * types.length)];
+      // Select a random question from that type
+      const questionsOfType = questions[randomType];
+      const randomQuestionIndex = Math.floor(Math.random() * questionsOfType.length);
+      return {
+        type: randomType,
+        ...questionsOfType[randomQuestionIndex]
+      };
+    }
+    
+    // Event Listeners
+    createPlayerIdBtn.addEventListener('click', () => {
+      const playerId = playerIdInput.value.trim();
+      if (playerId) {
+        currentPlayerId = playerId;
+        displayPlayerId.textContent = playerId;
+        
+        hideAllScreens();
+        gameOptionsScreen.classList.remove('hidden');
+      }
+    });
+    
+    createGameBtn.addEventListener('click', () => {
+      const roomId = generateRoomId();
+      currentRoomId = roomId;
+      isHost = true;
+      
+      // Initialize room in database
+      database.ref(`rooms/${roomId}`).set({
+        host: currentPlayerId,
+        status: 'waiting',
+        players: {
+          [currentPlayerId]: {
+            id: currentPlayerId,
+            isHost: true,
+            isReady: false
+          }
+        }
+      });
+      
+      roomIdDisplay.textContent = roomId;
+      
+      hideAllScreens();
+      gameCreationScreen.classList.remove('hidden');
+      
+      // Listen for players joining
+      listenForPlayersJoining(roomId);
+    });
+    
+    joinGameBtn.addEventListener('click', () => {
+      const roomId = joinRoomIdInput.value.trim().toUpperCase();
+      if (roomId) {
+        // Check if room exists
+        database.ref(`rooms/${roomId}`).once('value').then((snapshot) => {
+          if (snapshot.exists()) {
+            currentRoomId = roomId;
+            isHost = false;
+            
+            // Add player to room
+            database.ref(`rooms/${roomId}/players/${currentPlayerId}`).set({
+              id: currentPlayerId,
+              isHost: false,
+              isReady: false
+            });
+            
+            waitingRoomId.textContent = roomId;
+            
+            hideAllScreens();
+            waitingRoomScreen.classList.remove('hidden');
+            
+            // Listen for game start
+            listenForGameStart(roomId);
+            // Listen for players joining
+            listenForWaitingRoomPlayers(roomId);
+          } else {
+            alert('Room not found!');
+          }
+        });
+      }
+    });
+    
+    startGameBtn.addEventListener('click', () => {
+      const selectedTypes = getSelectedQuestionTypes();
+      if (selectedTypes.length === 0) {
+        alert('Please select at least one question type!');
+        return;
+      }
+      
+      // Start the game
+      database.ref(`rooms/${currentRoomId}`).update({
+        status: 'playing',
+        round: 1,
+        questionTypes: selectedTypes
+      }).then(() => {
+        startNewRound(currentRoomId, 1, selectedTypes);
+      });
+    });
+    
+    submitAnswerBtn.addEventListener('click', () => {
+      const answer = answerInput.value.trim();
+      if (answer) {
+        // Submit answer to database
+        database.ref(`rooms/${currentRoomId}/rounds/${currentRound}/answers/${currentPlayerId}`).set({
+          playerId: currentPlayerId,
+          answer: answer,
+          isImposter: isImposter
+        });
+        
+        // Show waiting for others
+        answerInput.disabled = true;
+        submitAnswerBtn.disabled = true;
+        waitingForOthers.classList.remove('hidden');
+        
+        // Listen for all players to submit
+        listenForAllAnswers(currentRoomId, currentRound);
+      }
+    });
+    
+    goToVotingBtn.addEventListener('click', () => {
+      // Update player status to ready for voting
+      database.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({
+        readyToVote: true
+      });
+      
+      // Check if all players are ready
+      checkAllPlayersReadyToVote(currentRoomId);
+      
+      // Show voting screen
+      showVotingScreen(currentRoomId, currentRound);
+    });
+    
+    submitVoteBtn.addEventListener('click', () => {
+      if (selectedAnswerId) {
+        // Submit vote to database
+        database.ref(`rooms/${currentRoomId}/rounds/${currentRound}/votes/${currentPlayerId}`).set({
+          voterId: currentPlayerId,
+          votedFor: selectedAnswerId
+        });
+        
+        hasVoted = true;
+        submitVoteBtn.disabled = true;
+        waitingForVotes.classList.remove('hidden');
+        
+        // Listen for all votes
+        listenForAllVotes(currentRoomId, currentRound);
+      }
+    });
+    
+    showResultsBtn.addEventListener('click', () => {
+      // Update player status to ready for results
+      database.ref(`rooms/${currentRoomId}/players/${currentPlayerId}`).update({
+        readyForResults: true
+      });
+      
+      // Check if all players are ready
+      checkAllPlayersReadyForResults(currentRoomId);
+      
+      // Show results screen
+      showResultsScreen(currentRoomId, currentRound);
+    });
+    
+    revealImposterBtn.addEventListener('click', () => {
+      database.ref(`rooms/${currentRoomId}/rounds/${currentRound}`).once('value').then((snapshot) => {
+        const roundData = snapshot.val();
+        if (roundData && roundData.imposter) {
+          const imposterPlayerId = roundData.imposter;
+          imposterName.textContent = imposterPlayerId;
+          imposterQuestion.textContent = roundData.imposterQuestion;
+          
+          // Highlight imposter answer
+          const allAnswers = document.querySelectorAll('.player-answer');
+          allAnswers.forEach(answer => {
+            if (answer.dataset.playerId === imposterPlayerId) {
+              answer.classList.add('imposter');
+            }
+          });
+          
+          imposterReveal.classList.remove('hidden');
+          revealImposterBtn.disabled = true;
+        }
+      });
+    });
+    
+    nextRoundBtn.addEventListener('click', () => {
+      // Update game to next round
+      const nextRound = currentRound + 1;
+      
+      if (isHost) {
+        database.ref(`rooms/${currentRoomId}`).once('value').then((snapshot) => {
+          const roomData = snapshot.val();
+          if (roomData) {
+            // Start new round
+            database.ref(`rooms/${currentRoomId}`).update({
+              status: 'playing',
+              round: nextRound
+            }).then(() => {
+              // Reset player statuses
+              const playerUpdates = {};
+              Object.keys(roomData.players).forEach(playerId => {
+                playerUpdates[`players/${playerId}/isReady`] = false;
+                playerUpdates[`players/${playerId}/readyToVote`] = false;
+                playerUpdates[`players/${playerId}/readyForResults`] = false;
+              });
+              
+              database.ref(`rooms/${currentRoomId}`).update(playerUpdates).then(() => {
+                startNewRound(currentRoomId, nextRound, roomData.questionTypes);
+              });
+            });
+          }
+        });
+      } else {
+        // If not host, just reset local state
+        resetLocalGameState();
+      }
+    });
+    
+    // Game Logic Functions
+    function listenForPlayersJoining(roomId) {
+      database.ref(`rooms/${roomId}/players`).on('value', (snapshot) => {
+        const players = snapshot.val() || {};
+        const playerCount = Object.keys(players).length;
+        
+        // Update players list
+        playersInRoom.innerHTML = '';
+        Object.values(players).forEach(player => {
+          const li = document.createElement('li');
+          li.textContent = player.id + (player.isHost ? ' (Host)' : '');
+          playersInRoom.appendChild(li);
+        });
+        
+        // Enable/disable start button based on player count
+        if (playerCount >= 3) {
+          startGameBtn.disabled = false;
+          startGameBtn.textContent = `Start Game (${playerCount} Players)`;
+          minPlayersError.classList.add('hidden');
+        } else {
+          startGameBtn.disabled = true;
+          startGameBtn.textContent = `Start Game (Need 3+ Players)`;
+          minPlayersError.classList.remove('hidden');
+        }
+      });
+    }
+    
+    function listenForWaitingRoomPlayers(roomId) {
+      database.ref(`rooms/${roomId}/players`).on('value', (snapshot) => {
+        const players = snapshot.val() || {};
+        const playerCount = Object.keys(players).length;
+        
+        // Update player count and list
+        waitingRoomPlayerCount.textContent = playerCount;
+        waitingRoomPlayersList.innerHTML = '';
+        Object.values(players).forEach(player => {
+          const li = document.createElement('li');
+          li.textContent = player.id + (player.isHost ? ' (Host)' : '');
+          waitingRoomPlayersList.appendChild(li);
+        });
+      });
+    }
+    
+    function listenForGameStart(roomId) {
+      database.ref(`rooms/${roomId}`).on('value', (snapshot) => {
+        const roomData = snapshot.val();
+        if (roomData && roomData.status === 'playing') {
+          currentRound = roomData.round || 1;
+          // Game has started, show question screen
+          showQuestionScreen(roomId, currentRound);
+        }
+      });
+    }
+    
+    function startNewRound(roomId, round, questionTypes) {
+      // Get all players
+      database.ref(`rooms/${roomId}/players`).once('value').then((snapshot) => {
+        const players = snapshot.val() || {};
+        const playerIds = Object.keys(players);
+        
+        if (playerIds.length >= 3) {
+          // Select a random player as imposter
+          const imposterIndex = Math.floor(Math.random() * playerIds.length);
+          const imposterPlayerId = playerIds[imposterIndex];
+          
+          // Select a random question
+          const selectedQuestion = selectRandomQuestion(questionTypes);
+          
+          // Set up the round in the database
+          database.ref(`rooms/${roomId}/rounds/${round}`).set({
+            question: selectedQuestion.regular,
+            imposterQuestion: selectedQuestion.imposter,
+            questionType: selectedQuestion.type,
+            imposter: imposterPlayerId,
+            status: 'answering'
+          }).then(() => {
+            // If current player is host, also show the question screen
+            if (isHost) {
+              showQuestionScreen(roomId, round);
+            }
+          });
+        }
+      });
+    }
+    
+    function showQuestionScreen(roomId, round) {
+      database.ref(`rooms/${roomId}/rounds/${round}`).once('value').then((snapshot) => {
+        const roundData = snapshot.val();
+        if (roundData) {
+          currentRound = round;
+          
+          // Determine if player is imposter
+          isImposter = roundData.imposter === currentPlayerId;
+          
+          // Set question text
+          questionText.textContent = isImposter ? roundData.imposterQuestion : roundData.question;
+          
+          // Update UI
+          questionRoomId.textContent = roomId;
+          roundNumber.textContent = round;
+          
+          // Reset input
+          answerInput.value = '';
+          answerInput.disabled = false;
+          submitAnswerBtn.disabled = false;
+          waitingForOthers.classList.add('hidden');
+          
+          // Show question screen
+          hideAllScreens();
+          questionScreen.classList.remove('hidden');
+        }
+      });
+    }
+    
+    function listenForAllAnswers(roomId, round) {
+      database.ref(`rooms/${roomId}/rounds/${round}/answers`).on('value', (snapshot) => {
+        const answers = snapshot.val() || {};
+        const answerCount = Object.keys(answers).length;
+        
+        // Get total player count
+        database.ref(`rooms/${roomId}/players`).once('value').then((playerSnapshot) => {
+          const players = playerSnapshot.val() || {};
+          const playerCount = Object.keys(players).length;
+          
+          // Update status
+          submitStatus.textContent = `${answerCount} of ${playerCount} players have answered`;
+          
+          // If all players have answered and this player is the host, update round status
+          if (answerCount === playerCount && isHost) {
+            database.ref(`rooms/${roomId}/rounds/${round}`).update({
+              status: 'voting'
+            });
+          }
+          
+          // If all players have answered, enable next button
+          if (answerCount === playerCount) {
+            goToVotingBtn.classList.remove('hidden');
+          }
+        });
+      });
+    }
+    
+    function checkAllPlayersReadyToVote(roomId) {
+      if (!isHost) return;
+      
+      database.ref(`rooms/${roomId}/players`).on('value', (snapshot) => {
+        const players = snapshot.val() || {};
+        const playerCount = Object.keys(players).length;
+        let readyCount = 0;
+        
+        Object.values(players).forEach(player => {
+          if (player.readyToVote) readyCount++;
+        });
+        
+        if (readyCount === playerCount) {
+          // All players ready, update round status
+          database.ref(`rooms/${roomId}/rounds/${currentRound}`).update({
+            status: 'voting'
+          });
+        }
+      });
+    }
+    
+    function showVotingScreen(roomId, round) {
+      database.ref(`rooms/${roomId}/rounds/${round}`).once('value').then((roundSnapshot) => {
+        const roundData = roundSnapshot.val();
+        
+        if (roundData && roundData.answers) {
+          // Set question display
+          mainQuestionDisplay.textContent = roundData.question;
+          
+          // Update UI
+          votingRoomId.textContent = roomId;
+          votingRoundNumber.textContent = round;
+          
+          // Reset voting state
+          selectedAnswerId = null;
+          submitVoteBtn.disabled = true;
+          waitingForVotes.classList.add('hidden');
+          hasVoted = false;
+          
+          // Show answers for voting
+          answersList.innerHTML = '';
+          const answers = roundData.answers;
+          
+          Object.values(answers).forEach(answer => {
+            const li = document.createElement('div');
+            li.className = 'player-answer';
+            li.textContent = `Player ${answer.playerId}: ${answer.answer}`;
+            li.dataset.playerId = answer.playerId;
+            
+            li.addEventListener('click', () => {
+              // Can't vote for yourself
+              if (answer.playerId === currentPlayerId) {
+                alert("You can't vote for yourself!");
+                return;
+              }
+              
+              // Select this answer
+              document.querySelectorAll('.player-answer').forEach(el => {
+                el.classList.remove('selected');
+              });
+              
+              li.classList.add('selected');
+              selectedAnswerId = answer.playerId;
+              submitVoteBtn.disabled = false;
+            });
+            
+            answersList.appendChild(li);
+          });
+          
+          // Show voting screen
+          hideAllScreens();
+          votingScreen.classList.remove('hidden');
+        }
+      });
+    }
+    
+    function listenForAllVotes(roomId, round) {
+      database.ref(`rooms/${roomId}/rounds/${round}/votes`).on('value', (snapshot) => {
+        const votes = snapshot.val() || {};
+        const voteCount = Object.keys(votes).length;
+        
+        // Get total player count
+        database.ref(`rooms/${roomId}/players`).once('value').then((playerSnapshot) => {
+          const players = playerSnapshot.val() || {};
+          const playerCount = Object.keys(players).length;
+          
+          // Update status
+          voteStatus.textContent = `${voteCount} of ${playerCount} players have voted`;
+          
+          // If all players have voted and this player is the host, update round status
+          if (voteCount === playerCount && isHost) {
+            database.ref(`rooms/${roomId}/rounds/${round}`).update({
+              status: 'results'
+            });
+          }
+          
+          // If all players have voted, enable next button
+          if (voteCount === playerCount) {
+            showResultsBtn.classList.remove('hidden');
+          }
+        });
+      });
+    }
+    
+    function checkAllPlayersReadyForResults(roomId) {
+      if (!isHost) return;
+      
+      database.ref(`rooms/${roomId}/players`).on('value', (snapshot) => {
+        const players = snapshot.val() || {};
+        const playerCount = Object.keys(players).length;
+        let readyCount = 0;
+        
+        Object.values(players).forEach(player => {
+          if (player.readyForResults) readyCount++;
+        });
+        
+        if (readyCount === playerCount) {
+          // All players ready, update round status
+          database.ref(`rooms/${roomId}/rounds/${currentRound}`).update({
+            status: 'results'
+          });
+        }
+      });
+    }
+    
+    function showResultsScreen(roomId, round) {
+      database.ref(`rooms/${roomId}/rounds/${round}`).once('value').then((roundSnapshot) => {
+        const roundData = roundSnapshot.val();
+        
+        if (roundData && roundData.votes) {
+          // Update UI
+          resultsRoomId.textContent = roomId;
+          resultsRoundNumber.textContent = round;
+          
+          // Reset results
+          playerVotes.innerHTML = '';
+          imposterReveal.classList.add('hidden');
+          revealImposterBtn.disabled = false;
+          
+          // Show votes
+          const votes = roundData.votes;
+          const voteCounts = {};
+          
+          // Count votes for each player
+          Object.values(votes).forEach(vote => {
+            if (!voteCounts[vote.votedFor]) {
+              voteCounts[vote.votedFor] = 0;
+            }
+            voteCounts[vote.votedFor]++;
+          });
+          
+          // Create voting results display
+          Object.values(votes).forEach(vote => {
+            const voteResult = document.createElement('div');
+            voteResult.className = 'vote-result';
+            voteResult.textContent = `Player ${vote.voterId} voted for Player ${vote.votedFor}`;
+            playerVotes.appendChild(voteResult);
+          });
+          
+          // Add vote totals
+          const totalDiv = document.createElement('div');
+          totalDiv.className = 'card';
+          totalDiv.innerHTML = '<h3>Vote Totals:</h3>';
+          
+          for (const playerId in voteCounts) {
+            const playerTotal = document.createElement('p');
+            playerTotal.textContent = `Player ${playerId}: ${voteCounts[playerId]} votes`;
+            totalDiv.appendChild(playerTotal);
+          }
+          
+          playerVotes.appendChild(totalDiv);
+          
+          // Show results screen
+          hideAllScreens();
+          resultsScreen.classList.remove('hidden');
+        }
+      });
+    }
+    
+    function resetLocalGameState() {
+      // Reset all game state variables for new round
+      selectedAnswerId = null;
+      isImposter = false;
+      hasVoted = false;
+    }
+    
+    // Initialize with player ID screen
+    hideAllScreens();
+    playerIdScreen.classList.remove('hidden');
+  </script>
+</body>
+</html>
